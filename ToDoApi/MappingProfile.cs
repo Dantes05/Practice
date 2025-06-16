@@ -12,11 +12,21 @@ namespace LibraryApp
             CreateMap<UserForRegistrationDto, User>()
                 .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.Email));
 
-
-            CreateMap<UserForRegistrationDto, User>()
-                .ForMember(dest => dest.UserName, opt => opt.MapFrom(src => src.Email));
-
             CreateMap<User, AuthResponseDto>();
+
+            CreateMap<CreateTaskDto, Taska>()
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(_ => "New")) 
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.UtcNow))
+                .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(_ => DateTime.UtcNow));
+
+            CreateMap<UpdateTaskDto, Taska>()
+                .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(_ => DateTime.UtcNow))
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null)); 
+
+            CreateMap<Taska, TaskDto>();
+
+            CreateMap<ChangeTaskStatusDto, Taska>()
+                .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(_ => DateTime.UtcNow));
         }
     }
 }

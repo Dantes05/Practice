@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Http.Features;
 using Domain.Interfaces;
 using Application.Services;
 using LibraryApp;
+using Application.ServicesInterfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -87,9 +88,10 @@ builder.Services.AddSingleton<JwtHandler>();
 
 builder.Services.AddControllers();
 
-
+builder.Services.AddScoped<ITaskRepository, TaskRepository>();
 
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<ITaskService, TaskService>();
 
 
 
