@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250615232515_InitialCreate")]
+    [Migration("20250616005228_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -24,6 +24,161 @@ namespace Infrastructure.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+
+            modelBuilder.Entity("Domain.Entities.Comment", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("AuthorId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("TaskaId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Text")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AuthorId");
+
+                    b.HasIndex("TaskaId");
+
+                    b.ToTable("Comments");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = "3fa85f64-5717-4562-b3fc-2c963f66afa9",
+                            AuthorId = "740bc7d9-dd55-4ac0-83f3-709d820968e7",
+                            CreatedAt = new DateTime(2025, 6, 16, 0, 52, 27, 587, DateTimeKind.Utc).AddTicks(1069),
+                            TaskaId = "3fa85f64-5717-4562-b3fc-2c963f66afa7",
+                            Text = "Please add more details to the task description"
+                        });
+                });
+
+            modelBuilder.Entity("Domain.Entities.TaskHistory", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("ChangedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ChangedById")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ChangedField")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("NewValue")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OldValue")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TaskaId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChangedById");
+
+                    b.HasIndex("TaskaId");
+
+                    b.ToTable("TaskHistories");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = "3fa85f64-5717-4562-b3fc-2c963f66afb0",
+                            ChangedAt = new DateTime(2025, 6, 16, 0, 52, 27, 590, DateTimeKind.Utc).AddTicks(3693),
+                            ChangedById = "740bc7d9-dd55-4ac0-83f3-709d820968e7",
+                            ChangedField = "Status",
+                            NewValue = "InProgress",
+                            OldValue = "New",
+                            TaskaId = "3fa85f64-5717-4562-b3fc-2c963f66afa7"
+                        });
+                });
+
+            modelBuilder.Entity("Domain.Entities.Taska", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("AssigneeId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatorId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("DueDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Priority")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssigneeId");
+
+                    b.HasIndex("CreatorId");
+
+                    b.ToTable("Tasks");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = "3fa85f64-5717-4562-b3fc-2c963f66afa7",
+                            AssigneeId = "740bc7d9-dd55-4ac0-83f3-709d820968e7",
+                            CreatedAt = new DateTime(2025, 6, 16, 0, 52, 27, 589, DateTimeKind.Utc).AddTicks(2672),
+                            CreatorId = "740bc7d9-dd55-4ac0-83f3-709d820968e7",
+                            Description = "Implement JWT authentication for the API",
+                            DueDate = new DateTime(2025, 6, 23, 0, 52, 27, 589, DateTimeKind.Utc).AddTicks(2414),
+                            Priority = "High",
+                            Status = "InProgress",
+                            Title = "Implement authentication",
+                            UpdatedAt = new DateTime(2025, 6, 16, 0, 52, 27, 589, DateTimeKind.Utc).AddTicks(2809)
+                        });
+                });
 
             modelBuilder.Entity("Domain.Entities.User", b =>
                 {
@@ -106,7 +261,7 @@ namespace Infrastructure.Migrations
                         {
                             Id = "740bc7d9-dd55-4ac0-83f3-709d820968e7",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "08243e2f-3031-43b3-b74e-41bb6fd173a2",
+                            ConcurrencyStamp = "abf84c4c-745a-4726-9819-bf05903bf561",
                             Email = "admin@gmail.com",
                             EmailConfirmed = true,
                             FirstName = "Админчик",
@@ -114,7 +269,7 @@ namespace Infrastructure.Migrations
                             LockoutEnabled = false,
                             NormalizedEmail = "ADMIN@GMAIL.COM",
                             NormalizedUserName = "ADMIN@GMAIL.COM",
-                            PasswordHash = "AQAAAAIAAYagAAAAEJcdFuw0BjsOjKnFDkYKzNOs7BlrxOEqkFVvCfoR+ptQyaYFXaLqqWudcfLT+LSjkQ==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEANVQeG+CachN8mlOwlLaDrjzZ/ugemzxGc8SvXHYgD7RwV4ceTV4Wv4a2z4hiiOrg==",
                             PhoneNumberConfirmed = false,
                             SecurityStamp = "fixed-security-stamp",
                             TwoFactorEnabled = false,
@@ -276,6 +431,62 @@ namespace Infrastructure.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("Domain.Entities.Comment", b =>
+                {
+                    b.HasOne("Domain.Entities.User", "Author")
+                        .WithMany()
+                        .HasForeignKey("AuthorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.Taska", "Taska")
+                        .WithMany("Comments")
+                        .HasForeignKey("TaskaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Author");
+
+                    b.Navigation("Taska");
+                });
+
+            modelBuilder.Entity("Domain.Entities.TaskHistory", b =>
+                {
+                    b.HasOne("Domain.Entities.User", "ChangedBy")
+                        .WithMany()
+                        .HasForeignKey("ChangedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.Taska", "Taska")
+                        .WithMany("History")
+                        .HasForeignKey("TaskaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ChangedBy");
+
+                    b.Navigation("Taska");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Taska", b =>
+                {
+                    b.HasOne("Domain.Entities.User", "Assignee")
+                        .WithMany()
+                        .HasForeignKey("AssigneeId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("Domain.Entities.User", "Creator")
+                        .WithMany()
+                        .HasForeignKey("CreatorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Assignee");
+
+                    b.Navigation("Creator");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -325,6 +536,13 @@ namespace Infrastructure.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Domain.Entities.Taska", b =>
+                {
+                    b.Navigation("Comments");
+
+                    b.Navigation("History");
                 });
 #pragma warning restore 612, 618
         }
