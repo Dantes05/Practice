@@ -10,6 +10,7 @@ namespace Application.ServicesInterfaces
         Task<IEnumerable<TaskDto>> GetAllTasksAsync(TaskFilterDto filter);
         Task UpdateTaskAsync(string id, UpdateTaskDto updateTaskDto);
         Task DeleteTaskAsync(string id);
+
         Task ChangeTaskStatusAsync(string id, ChangeTaskStatusDto changeStatusDto);
     }
 }

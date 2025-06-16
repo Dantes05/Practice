@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Linq.Expressions;
 
 namespace Application.Services
 {
@@ -45,17 +46,24 @@ namespace Application.Services
 
         public async Task<IEnumerable<TaskDto>> GetAllTasksAsync(TaskFilterDto filter)
         {
-            var tasks = await _taskRepository.FindAsync(t =>
+            Expression<Func<Taska, bool>> predicate = t =>
                 (string.IsNullOrEmpty(filter.Status) || t.Status == filter.Status) &&
                 (string.IsNullOrEmpty(filter.Priority) || t.Priority == filter.Priority) &&
                 (!filter.FromDate.HasValue || t.CreatedAt >= filter.FromDate.Value) &&
                 (!filter.ToDate.HasValue || t.CreatedAt <= filter.ToDate.Value) &&
+                (!filter.DueDateFrom.HasValue || t.DueDate >= filter.DueDateFrom.Value) &&
+                (!filter.DueDateTo.HasValue || t.DueDate <= filter.DueDateTo.Value) &&
                 (string.IsNullOrEmpty(filter.AssigneeId) || t.AssigneeId == filter.AssigneeId) &&
-                (string.IsNullOrEmpty(filter.CreatorId) || t.CreatorId == filter.CreatorId));
+                (string.IsNullOrEmpty(filter.CreatorId) || t.CreatorId == filter.CreatorId);
 
-            return _mapper.Map<IEnumerable<TaskDto>>(tasks)
-                .Skip((filter.PageNumber - 1) * filter.PageSize)
-                .Take(filter.PageSize);
+            var tasks = await _taskRepository.GetFilteredAndSortedAsync(
+                predicate,
+                filter.SortBy,
+                filter.SortDescending,
+                filter.PageNumber,
+                filter.PageSize);
+
+            return _mapper.Map<IEnumerable<TaskDto>>(tasks);
         }
 
         public async Task UpdateTaskAsync(string id, UpdateTaskDto updateTaskDto)

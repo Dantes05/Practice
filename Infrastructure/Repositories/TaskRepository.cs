@@ -48,7 +48,29 @@ namespace Infrastructure.Repositories
             _context.Tasks.Remove(task);
             await _context.SaveChangesAsync();
         }
+        public async Task<IEnumerable<Taska>> GetFilteredAndSortedAsync(Expression<Func<Taska, bool>> filter, string sortBy, bool? sortDescending, int pageNumber, int pageSize)
+        {
+            var query = _context.Tasks.AsQueryable().Where(filter);
 
+            query = sortBy?.ToLower() switch
+            {
+                "createdat" => sortDescending == true
+                    ? query.OrderByDescending(t => t.CreatedAt)
+                    : query.OrderBy(t => t.CreatedAt),
+                "duedate" => sortDescending == true
+                    ? query.OrderByDescending(t => t.DueDate)
+                    : query.OrderBy(t => t.DueDate),
+                "priority" => sortDescending == true
+                    ? query.OrderByDescending(t => t.Priority)
+                    : query.OrderBy(t => t.Priority),
+                _ => query
+            };
+
+            return await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+        }
         public async Task<bool> ExistsAsync(string id)
         {
             return await _context.Tasks.AnyAsync(t => t.Id == id);
