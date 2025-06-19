@@ -1,4 +1,5 @@
 ﻿using Domain.Entities;
+using Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -19,10 +20,16 @@ namespace Infrastructure.Persistence.Configurations
 
             builder.Property(t => t.Status)
                 .IsRequired()
+                .HasConversion(
+                    v => v.ToString(),
+                    v => (TaskaStatus)Enum.Parse(typeof(TaskaStatus), v))  
                 .HasMaxLength(20);
 
             builder.Property(t => t.Priority)
                 .IsRequired()
+                .HasConversion(
+                    v => v.ToString(),
+                    v => (TaskPriority)Enum.Parse(typeof(TaskPriority), v))
                 .HasMaxLength(20);
 
             builder.HasOne(t => t.Creator)
@@ -42,8 +49,8 @@ namespace Infrastructure.Persistence.Configurations
                     Id = "3fa85f64-5717-4562-b3fc-2c963f66afa7",
                     Title = "Implement authentication",
                     Description = "Implement JWT authentication for the API",
-                    Status = "InProgress",
-                    Priority = "High",
+                    Status = TaskaStatus.InProgress,
+                    Priority = TaskPriority.High,
                     DueDate = DateTime.UtcNow.AddDays(7),
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow,

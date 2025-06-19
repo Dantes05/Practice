@@ -88,6 +88,7 @@ builder.Services.AddSingleton<JwtHandler>();
 
 builder.Services.AddControllers();
 
+builder.Services.AddScoped(typeof(IBaseRepository<>), typeof(BaseRepository<>));
 builder.Services.AddScoped<ITaskRepository, TaskRepository>();
 
 builder.Services.AddScoped<AuthService>();

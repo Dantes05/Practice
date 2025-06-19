@@ -2,25 +2,20 @@
 using Application.Extensions;
 using AutoMapper;
 using Domain.Entities;
-using Domain.Interfaces;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
-using System.ComponentModel.DataAnnotations;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace Application.Services
 {
     public class AuthService
     {
         private readonly UserManager<User> _userManager;
-        private readonly SignInManager<User> _signInManager;
         private readonly IConfiguration _config;
         private readonly IMapper _mapper;
 
@@ -28,7 +23,6 @@ namespace Application.Services
             SignInManager<User> signInManager, IConfiguration config)
         {
             _userManager = userManager;
-            _signInManager = signInManager;
             _config = config;
             _mapper = mapper;
         }

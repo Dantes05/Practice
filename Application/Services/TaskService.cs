@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Linq.Expressions;
+using Domain.Enums;
 
 namespace Application.Services
 {
@@ -27,7 +28,7 @@ namespace Application.Services
             var task = _mapper.Map<Taska>(createTaskDto);
             task.Id = Guid.NewGuid().ToString();
             task.CreatorId = userId;
-            task.Status = "New";
+            task.Status = TaskaStatus.New;
             task.CreatedAt = DateTime.UtcNow;
             task.UpdatedAt = DateTime.UtcNow;
 
@@ -47,8 +48,8 @@ namespace Application.Services
         public async Task<IEnumerable<TaskDto>> GetAllTasksAsync(TaskFilterDto filter)
         {
             Expression<Func<Taska, bool>> predicate = t =>
-                (string.IsNullOrEmpty(filter.Status) || t.Status == filter.Status) &&
-                (string.IsNullOrEmpty(filter.Priority) || t.Priority == filter.Priority) &&
+                (!filter.Status.HasValue || t.Status == filter.Status.Value) &&
+                (!filter.Priority.HasValue || t.Priority == filter.Priority.Value) &&
                 (!filter.FromDate.HasValue || t.CreatedAt >= filter.FromDate.Value) &&
                 (!filter.ToDate.HasValue || t.CreatedAt <= filter.ToDate.Value) &&
                 (!filter.DueDateFrom.HasValue || t.DueDate >= filter.DueDateFrom.Value) &&

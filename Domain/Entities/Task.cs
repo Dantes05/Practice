@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using Microsoft.AspNetCore.Identity;
+using Domain.Enums;
 
 namespace Domain.Entities
 {
@@ -9,8 +10,8 @@ namespace Domain.Entities
         public string Id { get; set; } = Guid.NewGuid().ToString();
         public string Title { get; set; }
         public string Description { get; set; }
-        public string Status { get; set; }
-        public string Priority { get; set; }
+        public TaskaStatus Status { get; set; }
+        public TaskPriority Priority { get; set; }
         public DateTime DueDate { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

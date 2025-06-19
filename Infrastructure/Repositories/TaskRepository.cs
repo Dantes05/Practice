@@ -7,50 +7,30 @@ using System.Linq.Expressions;
 
 namespace Infrastructure.Repositories
 {
-    public class TaskRepository : ITaskRepository
+    public class TaskRepository : BaseRepository<Taska>, ITaskRepository
     {
-        private readonly ApplicationDbContext _context;
-
-        public TaskRepository(ApplicationDbContext context)
+        public TaskRepository(ApplicationDbContext context) : base(context)
         {
-            _context = context;
         }
 
-        public async Task<Taska> GetByIdAsync(string id)
+        public async Task<bool> ExistsAsync(string id)
         {
-            return await _context.Tasks.FindAsync(id);
-        }
-
-        public async Task<IEnumerable<Taska>> GetAllAsync()
-        {
-            return await _context.Tasks.ToListAsync();
+            return await _context.Set<Taska>().AnyAsync(t => t.Id == id);
         }
 
         public async Task<IEnumerable<Taska>> FindAsync(Expression<Func<Taska, bool>> predicate)
         {
-            return await _context.Tasks.Where(predicate).ToListAsync();
+            return await _context.Set<Taska>().Where(predicate).ToListAsync();
         }
 
-        public async Task AddAsync(Taska task)
+        public async Task<IEnumerable<Taska>> GetFilteredAndSortedAsync(
+            Expression<Func<Taska, bool>> filter,
+            string sortBy,
+            bool? sortDescending,
+            int pageNumber,
+            int pageSize)
         {
-            await _context.Tasks.AddAsync(task);
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task UpdateAsync(Taska task)
-        {
-            _context.Tasks.Update(task);
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task DeleteAsync(Taska task)
-        {
-            _context.Tasks.Remove(task);
-            await _context.SaveChangesAsync();
-        }
-        public async Task<IEnumerable<Taska>> GetFilteredAndSortedAsync(Expression<Func<Taska, bool>> filter, string sortBy, bool? sortDescending, int pageNumber, int pageSize)
-        {
-            var query = _context.Tasks.AsQueryable().Where(filter);
+            var query = _context.Set<Taska>().AsQueryable().Where(filter);
 
             query = sortBy?.ToLower() switch
             {
@@ -70,10 +50,6 @@ namespace Infrastructure.Repositories
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
-        }
-        public async Task<bool> ExistsAsync(string id)
-        {
-            return await _context.Tasks.AnyAsync(t => t.Id == id);
         }
     }
 }
