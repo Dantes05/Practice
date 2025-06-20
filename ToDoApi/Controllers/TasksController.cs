@@ -21,6 +21,7 @@ namespace WebAPI.Controllers
             _taskService = taskService;
         }
 
+        [Authorize(Policy = "OnlyAdminUsers")]
         [HttpPost]
         public async Task<ActionResult<TaskDto>> CreateTask([FromBody] CreateTaskDto createTaskDto)
         {

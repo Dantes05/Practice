@@ -27,6 +27,14 @@ namespace LibraryApp
 
             CreateMap<ChangeTaskStatusDto, Taska>()
                 .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(_ => DateTime.UtcNow));
+
+            CreateMap<CreateCommentDto, Comment>()
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(_ => DateTime.UtcNow));
+
+            CreateMap<UpdateCommentDto, Comment>()
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+
+            CreateMap<Comment, CommentDto>();
         }
     }
 }
