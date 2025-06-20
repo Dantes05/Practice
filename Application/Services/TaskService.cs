@@ -9,17 +9,23 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Linq.Expressions;
 using Domain.Enums;
+using System.Reflection;
 
 namespace Application.Services
 {
     public class TaskService : ITaskService
     {
         private readonly ITaskRepository _taskRepository;
+        private readonly ITaskHistoryRepository _taskHistoryRepository;
         private readonly IMapper _mapper;
 
-        public TaskService(ITaskRepository taskRepository, IMapper mapper)
+        public TaskService(
+            ITaskRepository taskRepository,
+            ITaskHistoryRepository taskHistoryRepository,
+            IMapper mapper)
         {
             _taskRepository = taskRepository;
+            _taskHistoryRepository = taskHistoryRepository;
             _mapper = mapper;
         }
 
@@ -33,6 +39,15 @@ namespace Application.Services
             task.UpdatedAt = DateTime.UtcNow;
 
             await _taskRepository.AddAsync(task);
+
+            await AddHistoryRecord(
+                task.Id,
+                userId,
+                "Task",
+                null,
+                "Created",
+                $"Task created by user {userId}");
+
             return _mapper.Map<TaskDto>(task);
         }
 
@@ -67,37 +82,139 @@ namespace Application.Services
             return _mapper.Map<IEnumerable<TaskDto>>(tasks);
         }
 
-        public async Task UpdateTaskAsync(string id, UpdateTaskDto updateTaskDto)
+        public async Task UpdateTaskAsync(string id, UpdateTaskDto updateTaskDto, string userId)
         {
             var task = await _taskRepository.GetByIdAsync(id);
             if (task == null)
                 throw new KeyNotFoundException("Task not found");
+
+            var oldValues = new Dictionary<string, string>
+            {
+                { "Title", task.Title },
+                { "Description", task.Description },
+                { "Priority", task.Priority.ToString() },
+                { "DueDate", task.DueDate.ToString("o") },
+                { "AssigneeId", task.AssigneeId }
+            };
 
             _mapper.Map(updateTaskDto, task);
             task.UpdatedAt = DateTime.UtcNow;
 
             await _taskRepository.UpdateAsync(task);
+
+            foreach (var change in oldValues)
+            {
+                var newValue = GetPropertyValue(task, change.Key);
+                if (change.Value != newValue)
+                {
+                    await AddHistoryRecord(
+                        task.Id,
+                        userId,
+                        change.Key,
+                        change.Value,
+                        newValue);
+                }
+            }
         }
 
-        public async Task DeleteTaskAsync(string id)
+        public async Task DeleteTaskAsync(string id, string userId)
         {
             var task = await _taskRepository.GetByIdAsync(id);
             if (task == null)
                 throw new KeyNotFoundException("Task not found");
+
+            await AddHistoryRecord(
+                task.Id,
+                userId,
+                "Task",
+                "Exists",
+                "Deleted",
+                $"Task was deleted by user {userId}");
 
             await _taskRepository.DeleteAsync(task);
         }
 
-        public async Task ChangeTaskStatusAsync(string id, ChangeTaskStatusDto changeStatusDto)
+        public async Task ChangeTaskStatusAsync(string id, ChangeTaskStatusDto changeStatusDto, string userId)
         {
             var task = await _taskRepository.GetByIdAsync(id);
             if (task == null)
                 throw new KeyNotFoundException("Task not found");
 
+            var oldStatus = task.Status.ToString();
             task.Status = changeStatusDto.Status;
             task.UpdatedAt = DateTime.UtcNow;
 
             await _taskRepository.UpdateAsync(task);
+
+            await AddHistoryRecord(
+                task.Id,
+                userId,
+                "Status",
+                oldStatus,
+                task.Status.ToString(),
+                $"Status changed from {oldStatus} to {task.Status} by user {userId}");
+        }
+
+        private async Task AddHistoryRecord(
+            string taskId,
+            string userId,
+            string field,
+            string oldValue,
+            string newValue)
+        {
+            var history = new TaskHistory
+            {
+                TaskaId = taskId,
+                ChangedById = userId,
+                ChangedField = field,
+                OldValue = oldValue ?? string.Empty,
+                NewValue = newValue ?? string.Empty,
+                ChangedAt = DateTime.UtcNow
+            };
+
+            await _taskHistoryRepository.AddAsync(history);
+        }
+
+        private async Task AddHistoryRecord(
+            string taskId,
+            string userId,
+            string field,
+            string oldValue,
+            string newValue,
+            string additionalInfo)
+        {
+            var history = new TaskHistory
+            {
+                TaskaId = taskId,
+                ChangedById = userId,
+                ChangedField = field,
+                OldValue = oldValue ?? string.Empty,
+                NewValue = newValue ?? string.Empty,
+                ChangedAt = DateTime.UtcNow
+            };
+
+            if (!string.IsNullOrEmpty(additionalInfo))
+            {
+                history.NewValue = $"{newValue} | {additionalInfo}";
+            }
+
+            await _taskHistoryRepository.AddAsync(history);
+        }
+
+        private string GetPropertyValue(Taska task, string propertyName)
+        {
+            var property = typeof(Taska).GetProperty(propertyName);
+            if (property == null) return string.Empty;
+
+            var value = property.GetValue(task);
+            if (value == null) return string.Empty;
+
+            if (value is DateTime dateTimeValue)
+            {
+                return dateTimeValue.ToString("o");
+            }
+
+            return value.ToString();
         }
     }
 }

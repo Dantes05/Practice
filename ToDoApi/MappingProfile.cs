@@ -35,6 +35,7 @@ namespace LibraryApp
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
 
             CreateMap<Comment, CommentDto>();
+            CreateMap<TaskHistory, TaskHistoryDto>();
         }
     }
 }

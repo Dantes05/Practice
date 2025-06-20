@@ -21,21 +21,29 @@ namespace WebAPI.Controllers
             _taskService = taskService;
         }
 
+        private string GetUserIdFromToken()
+        {
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                throw new UnauthorizedAccessException("User ID not found in token");
+            }
+            return userId;
+        }
+
         [Authorize(Policy = "OnlyAdminUsers")]
         [HttpPost]
         public async Task<ActionResult<TaskDto>> CreateTask([FromBody] CreateTaskDto createTaskDto)
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized(new { Message = "User ID not found in token" });
-            }
-
             try
             {
+                var userId = GetUserIdFromToken();
                 var task = await _taskService.CreateTaskAsync(createTaskDto, userId);
                 return CreatedAtAction(nameof(GetTask), new { id = task.Id }, task);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { Message = ex.Message });
             }
             catch (Exception ex)
             {
@@ -80,8 +88,13 @@ namespace WebAPI.Controllers
         {
             try
             {
-                await _taskService.UpdateTaskAsync(id, updateTaskDto);
+                var userId = GetUserIdFromToken();
+                await _taskService.UpdateTaskAsync(id, updateTaskDto, userId);
                 return NoContent();
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { Message = ex.Message });
             }
             catch (KeyNotFoundException)
             {
@@ -98,8 +111,13 @@ namespace WebAPI.Controllers
         {
             try
             {
-                await _taskService.DeleteTaskAsync(id);
+                var userId = GetUserIdFromToken();
+                await _taskService.DeleteTaskAsync(id, userId);
                 return NoContent();
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { Message = ex.Message });
             }
             catch (KeyNotFoundException)
             {
@@ -116,8 +134,13 @@ namespace WebAPI.Controllers
         {
             try
             {
-                await _taskService.ChangeTaskStatusAsync(id, changeStatusDto);
+                var userId = GetUserIdFromToken();
+                await _taskService.ChangeTaskStatusAsync(id, changeStatusDto, userId);
                 return NoContent();
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { Message = ex.Message });
             }
             catch (KeyNotFoundException)
             {
