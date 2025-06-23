@@ -11,5 +11,6 @@ namespace Application.ServicesInterfaces
         Task UpdateTaskAsync(string id, UpdateTaskDto updateTaskDto, string userId);
         Task DeleteTaskAsync(string id, string userId);
         Task ChangeTaskStatusAsync(string id, ChangeTaskStatusDto changeStatusDto, string userId);
+        Task<byte[]> ExportTasksToCsvAsync(TaskFilterDto filter);
     }
 }

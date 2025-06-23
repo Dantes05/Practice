@@ -216,5 +216,34 @@ namespace Application.Services
 
             return value.ToString();
         }
+
+        public async Task<byte[]> ExportTasksToCsvAsync(TaskFilterDto filter)
+        {
+           
+            Expression<Func<Taska, bool>> predicate = t =>
+                (!filter.Status.HasValue || t.Status == filter.Status.Value) &&
+                (!filter.Priority.HasValue || t.Priority == filter.Priority.Value) &&
+                (!filter.FromDate.HasValue || t.CreatedAt >= filter.FromDate.Value) &&
+                (!filter.ToDate.HasValue || t.CreatedAt <= filter.ToDate.Value) &&
+                (!filter.DueDateFrom.HasValue || t.DueDate >= filter.DueDateFrom.Value) &&
+                (!filter.DueDateTo.HasValue || t.DueDate <= filter.DueDateTo.Value) &&
+                (string.IsNullOrEmpty(filter.AssigneeId) || t.AssigneeId == filter.AssigneeId) &&
+                (string.IsNullOrEmpty(filter.CreatorId) || t.CreatorId == filter.CreatorId);
+
+            var tasks = await _taskRepository.FindAsync(predicate);
+
+            using var memoryStream = new MemoryStream();
+            using var streamWriter = new StreamWriter(memoryStream);
+            using var csvWriter = new CsvHelper.CsvWriter(streamWriter, System.Globalization.CultureInfo.InvariantCulture);
+
+            csvWriter.WriteHeader<TaskCsvDto>();
+            await csvWriter.NextRecordAsync();
+
+            var csvRecords = _mapper.Map<IEnumerable<TaskCsvDto>>(tasks);
+            await csvWriter.WriteRecordsAsync(csvRecords);
+
+            await streamWriter.FlushAsync();
+            return memoryStream.ToArray();
+        }
     }
 }

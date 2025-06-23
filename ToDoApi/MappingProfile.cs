@@ -36,6 +36,13 @@ namespace LibraryApp
 
             CreateMap<Comment, CommentDto>();
             CreateMap<TaskHistory, TaskHistoryDto>();
+
+            CreateMap<Taska, TaskCsvDto>()
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(dest => dest.Priority, opt => opt.MapFrom(src => src.Priority.ToString()))
+                .ForMember(dest => dest.DueDate, opt => opt.MapFrom(src => src.DueDate.ToString("o")))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAt.ToString("o")))
+                .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => src.UpdatedAt.ToString("o")));
         }
     }
 }

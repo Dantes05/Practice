@@ -151,5 +151,20 @@ namespace WebAPI.Controllers
                 return BadRequest(ex.Message);
             }
         }
+
+        [HttpGet("export")]
+        public async Task<IActionResult> ExportTasks([FromQuery] TaskFilterDto filter)
+        {
+            try
+            {
+                var csvBytes = await _taskService.ExportTasksToCsvAsync(filter);
+
+                return File(csvBytes, "text/csv", $"tasks_export_{DateTime.UtcNow:yyyyMMddHHmmss}.csv");
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
     }
 }
