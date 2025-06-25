@@ -2,7 +2,6 @@
 using Domain.Interfaces;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
-using System.Linq;
 using System.Linq.Expressions;
 
 namespace Infrastructure.Repositories
@@ -13,14 +12,14 @@ namespace Infrastructure.Repositories
         {
         }
 
-        public async Task<bool> ExistsAsync(string id)
+        public async Task<bool> ExistsAsync(string id, CancellationToken cancellationToken = default)
         {
-            return await _context.Set<Taska>().AnyAsync(t => t.Id == id);
+            return await _context.Set<Taska>().AnyAsync(t => t.Id == id, cancellationToken);
         }
 
-        public async Task<IEnumerable<Taska>> FindAsync(Expression<Func<Taska, bool>> predicate)
+        public async Task<IEnumerable<Taska>> FindAsync(Expression<Func<Taska, bool>> predicate, CancellationToken cancellationToken = default)
         {
-            return await _context.Set<Taska>().Where(predicate).ToListAsync();
+            return await _context.Set<Taska>().Where(predicate).ToListAsync(cancellationToken);
         }
 
         public async Task<IEnumerable<Taska>> GetFilteredAndSortedAsync(
@@ -28,7 +27,8 @@ namespace Infrastructure.Repositories
             string sortBy,
             bool? sortDescending,
             int pageNumber,
-            int pageSize)
+            int pageSize,
+            CancellationToken cancellationToken = default)
         {
             var query = _context.Set<Taska>().AsQueryable().Where(filter);
 
@@ -49,7 +49,7 @@ namespace Infrastructure.Repositories
             return await query
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
         }
     }
 }

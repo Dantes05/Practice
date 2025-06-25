@@ -2,11 +2,6 @@
 using Domain.Interfaces;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Infrastructure.Repositories
 {
@@ -16,18 +11,19 @@ namespace Infrastructure.Repositories
         {
         }
 
-        public async Task<IEnumerable<Comment>> GetCommentsForTaskAsync(string taskId)
+        public async Task<IEnumerable<Comment>> GetCommentsForTaskAsync(string taskId, CancellationToken cancellationToken = default)
         {
             return await _context.Set<Comment>()
                 .Where(c => c.TaskaId == taskId)
                 .OrderByDescending(c => c.CreatedAt)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
         }
-        public async Task<IEnumerable<Comment>> GetAllCommentsAsync()
+
+        public async Task<IEnumerable<Comment>> GetAllCommentsAsync(CancellationToken cancellationToken = default)
         {
             return await _context.Set<Comment>()
                 .OrderByDescending(c => c.CreatedAt)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
         }
     }
 }

@@ -9,6 +9,6 @@ namespace Domain.Interfaces
 {
     public interface ITaskHistoryRepository : IBaseRepository<TaskHistory>
     {
-        Task<IEnumerable<TaskHistory>> GetByTaskIdAsync(string taskId);
+        Task<IEnumerable<TaskHistory>> GetByTaskIdAsync(string taskId, CancellationToken cancellationToken = default);
     }
 }

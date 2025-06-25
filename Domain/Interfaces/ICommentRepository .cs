@@ -9,7 +9,7 @@ namespace Domain.Interfaces
 {
     public interface ICommentRepository : IBaseRepository<Comment>
     {
-        Task<IEnumerable<Comment>> GetCommentsForTaskAsync(string taskId);
-        Task<IEnumerable<Comment>> GetAllCommentsAsync();
+        Task<IEnumerable<Comment>> GetCommentsForTaskAsync(string taskId, CancellationToken cancellationToken = default);
+        Task<IEnumerable<Comment>> GetAllCommentsAsync(CancellationToken cancellationToken = default);
     }
 }

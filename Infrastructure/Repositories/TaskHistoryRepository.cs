@@ -2,11 +2,6 @@
 using Domain.Interfaces;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Infrastructure.Repositories
 {
@@ -16,12 +11,12 @@ namespace Infrastructure.Repositories
         {
         }
 
-        public async Task<IEnumerable<TaskHistory>> GetByTaskIdAsync(string taskId)
+        public async Task<IEnumerable<TaskHistory>> GetByTaskIdAsync(string taskId, CancellationToken cancellationToken = default)
         {
             return await _context.TaskHistories
                 .Where(th => th.TaskaId == taskId)
                 .OrderByDescending(th => th.ChangedAt)
-                .ToListAsync();
+                .ToListAsync(cancellationToken);
         }
     }
 }

@@ -14,6 +14,7 @@ using Domain.Interfaces;
 using Infrastructure.Repositories;
 using Application.ServicesInterfaces;
 using LibraryApp.JwtFeatures;
+using LibraryApp;
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Debug()
@@ -52,6 +53,7 @@ try
     builder.Services.AddScoped<ITaskHistoryService, TaskHistoryService>();
     builder.Services.AddScoped<AuthService>();
     builder.Services.AddSingleton<JwtHandler>();
+
     builder.Services.AddSwaggerGen(c =>
     {
         c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -107,7 +109,7 @@ try
 
     var app = builder.Build();
 
-    app.UseMiddleware<CorrelationIdMiddleware>(); 
+
 
     if (app.Environment.IsDevelopment())
     {
@@ -118,6 +120,8 @@ try
     app.UseHttpsRedirection();
     app.UseAuthentication();
     app.UseAuthorization();
+    app.UseMiddleware<Middleware>();
+    app.UseMiddleware<CorrelationIdMiddleware>();
 
     using (var scope = app.Services.CreateScope())
     {

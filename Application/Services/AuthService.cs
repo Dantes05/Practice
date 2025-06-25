@@ -5,11 +5,16 @@ using Domain.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
+using System;
+using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Application.Services
 {
@@ -18,22 +23,30 @@ namespace Application.Services
         private readonly UserManager<User> _userManager;
         private readonly IConfiguration _config;
         private readonly IMapper _mapper;
+        private readonly ILogger<AuthService> _logger;
 
-        public AuthService(IMapper mapper, UserManager<User> userManager,
-            SignInManager<User> signInManager, IConfiguration config)
+        public AuthService(
+            IMapper mapper,
+            UserManager<User> userManager,
+            IConfiguration config,
+            ILogger<AuthService> logger)
         {
             _userManager = userManager;
             _config = config;
             _mapper = mapper;
+            _logger = logger;
         }
 
-        public async Task<RegistrationResponseDto> RegisterAsync(
+        public async Task RegisterAsync(
             UserForRegistrationDto userForRegistration,
             CancellationToken cancellationToken = default)
         {
+            _logger.LogInformation("Register request for user: {Email}", userForRegistration.Email);
+
             if (userForRegistration == null)
             {
-                throw new Extensions.ValidationException("User data is required");
+                _logger.LogError("User data is required");
+                throw new ValidationException("User data is required");
             }
 
             var user = _mapper.Map<User>(userForRegistration);
@@ -42,20 +55,24 @@ namespace Application.Services
             if (!result.Succeeded)
             {
                 var errors = result.Errors.Select(e => e.Description);
-                throw new Extensions.ValidationException($"Registration failed: {string.Join(", ", errors)}");
+                _logger.LogError("Registration failed for user {Email}: {Errors}", userForRegistration.Email, string.Join(", ", errors));
+                throw new ValidationException($"Registration failed: {string.Join(", ", errors)}");
             }
 
             await _userManager.AddToRoleAsync(user, "User");
-            return new RegistrationResponseDto { IsSuccessfulRegistration = true };
+            _logger.LogInformation("User registered successfully: {Email}", userForRegistration.Email);
         }
 
         public async Task<AuthResponseDto> AuthenticateAsync(
             UserForAuthenticationDto userForAuthentication,
             CancellationToken cancellationToken = default)
         {
+            _logger.LogInformation("Authentication request for user: {Email}", userForAuthentication.Email);
+
             var user = await _userManager.FindByEmailAsync(userForAuthentication.Email);
             if (user == null || !await _userManager.CheckPasswordAsync(user, userForAuthentication.Password))
             {
+                _logger.LogError("Authentication failed for user: {Email}", userForAuthentication.Email);
                 throw new UnauthorizedException("Invalid email or password");
             }
 
@@ -73,6 +90,7 @@ namespace Application.Services
             authResponse.RefreshToken = refreshToken;
             authResponse.IsAuthSuccessful = true;
 
+            _logger.LogInformation("User authenticated: {Email}", userForAuthentication.Email);
             return authResponse;
         }
 
@@ -80,17 +98,21 @@ namespace Application.Services
             RefreshTokenRequest request,
             CancellationToken cancellationToken = default)
         {
+            _logger.LogDebug("Refresh token request");
+
             var user = await _userManager.Users
                 .FirstOrDefaultAsync(u => u.RefreshToken == request.RefreshToken, cancellationToken);
 
             if (user == null || user.RefreshTokenExpiryTime <= DateTime.UtcNow)
             {
+                _logger.LogError("Refresh token failed - invalid or expired token");
                 throw new UnauthorizedException("Invalid or expired refresh token");
             }
 
             var roles = await _userManager.GetRolesAsync(user);
             var newAccessToken = GenerateJwtToken(user, roles);
 
+            _logger.LogDebug("Token refreshed successfully");
             return new AuthResponseDto
             {
                 IsAuthSuccessful = true,
@@ -103,9 +125,13 @@ namespace Application.Services
             ClaimsPrincipal userPrincipal,
             CancellationToken cancellationToken = default)
         {
+            var userId = userPrincipal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            _logger.LogInformation("Logout request for user: {UserId}", userId);
+
             var user = await _userManager.GetUserAsync(userPrincipal);
             if (user == null)
             {
+                _logger.LogError("Logout failed for user: {UserId} - user not found", userId);
                 throw new UnauthorizedException("User not found");
             }
 
@@ -113,6 +139,7 @@ namespace Application.Services
             user.RefreshTokenExpiryTime = null;
 
             await _userManager.UpdateAsync(user);
+            _logger.LogInformation("User logged out: {UserId}", userId);
         }
 
         private string GenerateJwtToken(User user, IList<string> roles)

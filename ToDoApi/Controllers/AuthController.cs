@@ -1,11 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Application.DTOs;
 using Application.Services;
-using Microsoft.Extensions.Logging;
-using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
 
 namespace ToDoApi.Controllers
 {
@@ -14,92 +12,45 @@ namespace ToDoApi.Controllers
     public class AuthController : ControllerBase
     {
         private readonly AuthService _authService;
-        private readonly ILogger<AuthController> _logger;
 
-        public AuthController(AuthService authService, ILogger<AuthController> logger)
+        public AuthController(AuthService authService)
         {
             _authService = authService;
-            _logger = logger;
         }
 
         [HttpPost("register")]
         public async Task<IActionResult> Register(
             [FromBody] UserForRegistrationDto userForRegistration,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken = default)
         {
-            _logger.LogInformation("Register request for user: {Email}", userForRegistration.Email);
-
-            try
-            {
-                await _authService.RegisterAsync(userForRegistration, cancellationToken);
-                _logger.LogInformation("User registered successfully: {Email}", userForRegistration.Email);
-                return Ok();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error registering user: {Email}", userForRegistration.Email);
-                return BadRequest(ex.Message);
-            }
+            await _authService.RegisterAsync(userForRegistration, cancellationToken);
+            return Ok();
         }
 
         [HttpPost("authenticate")]
         public async Task<ActionResult<AuthResponseDto>> Authenticate(
             [FromBody] UserForAuthenticationDto userForAuthentication,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken = default)
         {
-            _logger.LogInformation("Authentication request for user: {Email}", userForAuthentication.Email);
-
-            try
-            {
-                var result = await _authService.AuthenticateAsync(userForAuthentication, cancellationToken);
-                _logger.LogInformation("User authenticated: {Email}", userForAuthentication.Email);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Authentication failed for user: {Email}", userForAuthentication.Email);
-                return Unauthorized(ex.Message);
-            }
+            var result = await _authService.AuthenticateAsync(userForAuthentication, cancellationToken);
+            return Ok(result);
         }
 
         [HttpPost("refresh")]
         public async Task<ActionResult<AuthResponseDto>> Refresh(
             [FromBody] RefreshTokenRequest request,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken = default)
         {
-            _logger.LogDebug("Refresh token request");
-
-            try
-            {
-                var result = await _authService.RefreshTokenAsync(request, cancellationToken);
-                _logger.LogDebug("Token refreshed successfully");
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Refresh token failed");
-                return BadRequest(ex.Message);
-            }
+            var result = await _authService.RefreshTokenAsync(request, cancellationToken);
+            return Ok(result);
         }
 
         [Authorize]
         [HttpPost("logout")]
-        public async Task<IActionResult> Logout(CancellationToken cancellationToken)
+        public async Task<IActionResult> Logout(CancellationToken cancellationToken = default)
         {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            _logger.LogInformation("Logout request for user: {UserId}", userId);
-
-            try
-            {
-                await _authService.LogoutAsync(User, cancellationToken);
-                _logger.LogInformation("User logged out: {UserId}", userId);
-                return Ok();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Logout failed for user: {UserId}", userId);
-                return BadRequest(ex.Message);
-            }
+            await _authService.LogoutAsync(User, cancellationToken);
+            return Ok();
         }
     }
 }
