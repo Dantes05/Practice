@@ -3,6 +3,7 @@ using Application.ServicesInterfaces;
 using AutoMapper;
 using Domain.Entities;
 using Domain.Interfaces;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -17,17 +18,22 @@ namespace Application.Services
         private readonly ITaskRepository _taskRepository;
         private readonly IMapper _mapper;
         private readonly ILogger<CommentService> _logger;
+        private readonly IMemoryCache _memoryCache;
+        private const string AllCommentsCacheKey = "all_comments_cache";
+        private const string TaskCommentsCachePrefix = "task_comments_";
 
         public CommentService(
             ICommentRepository commentRepository,
             ITaskRepository taskRepository,
             IMapper mapper,
-            ILogger<CommentService> logger)
+            ILogger<CommentService> logger,
+            IMemoryCache memoryCache)
         {
             _commentRepository = commentRepository;
             _taskRepository = taskRepository;
             _mapper = mapper;
             _logger = logger;
+            _memoryCache = memoryCache;
         }
 
         public async Task<CommentDto> CreateCommentAsync(
@@ -51,6 +57,9 @@ namespace Application.Services
             comment.CreatedAt = DateTime.UtcNow;
 
             await _commentRepository.AddAsync(comment, cancellationToken);
+
+            _memoryCache.Remove(GetTaskCommentsCacheKey(createCommentDto.TaskaId));
+            _memoryCache.Remove(AllCommentsCacheKey);
 
             _logger.LogInformation(
                 "Comment created successfully. CommentId: {CommentId}, TaskId: {TaskId}",
@@ -82,7 +91,24 @@ namespace Application.Services
         {
             _logger.LogDebug("Getting all comments for task {TaskId}", taskId);
 
-            var comments = await _commentRepository.GetCommentsForTaskAsync(taskId, cancellationToken);
+            var cacheKey = GetTaskCommentsCacheKey(taskId);
+
+            if (!_memoryCache.TryGetValue(cacheKey, out IEnumerable<Comment> comments))
+            {
+                comments = await _commentRepository.GetCommentsForTaskAsync(taskId, cancellationToken);
+
+                var cacheEntryOptions = new MemoryCacheEntryOptions()
+                    .SetSlidingExpiration(TimeSpan.FromMinutes(5))
+                    .SetAbsoluteExpiration(TimeSpan.FromHours(1));
+
+                _memoryCache.Set(cacheKey, comments, cacheEntryOptions);
+
+                _logger.LogDebug("Comments for task {TaskId} loaded from repository and cached", taskId);
+            }
+            else
+            {
+                _logger.LogDebug("Comments for task {TaskId} loaded from cache", taskId);
+            }
 
             _logger.LogDebug("Retrieved {Count} comments for task {TaskId}", comments.Count(), taskId);
             return _mapper.Map<IEnumerable<CommentDto>>(comments);
@@ -109,8 +135,13 @@ namespace Application.Services
                 throw new UnauthorizedAccessException("You can only update your own comments");
             }
 
+            var taskId = comment.TaskaId;
+
             _mapper.Map(updateCommentDto, comment);
             await _commentRepository.UpdateAsync(comment, cancellationToken);
+
+            _memoryCache.Remove(GetTaskCommentsCacheKey(taskId));
+            _memoryCache.Remove(AllCommentsCacheKey);
 
             _logger.LogInformation(
                 "Comment {CommentId} updated successfully by user {UserId}",
@@ -137,7 +168,12 @@ namespace Application.Services
                 throw new UnauthorizedAccessException("You can only delete your own comments");
             }
 
+            var taskId = comment.TaskaId;
+
             await _commentRepository.DeleteAsync(comment, cancellationToken);
+
+            _memoryCache.Remove(GetTaskCommentsCacheKey(taskId));
+            _memoryCache.Remove(AllCommentsCacheKey);
 
             _logger.LogInformation(
                 "Comment {CommentId} deleted successfully by user {UserId}",
@@ -149,10 +185,30 @@ namespace Application.Services
         {
             _logger.LogDebug("Admin request to get all comments");
 
-            var comments = await _commentRepository.GetAllCommentsAsync(cancellationToken);
+            if (!_memoryCache.TryGetValue(AllCommentsCacheKey, out IEnumerable<Comment> comments))
+            {
+                comments = await _commentRepository.GetAllCommentsAsync(cancellationToken);
+
+                var cacheEntryOptions = new MemoryCacheEntryOptions()
+                    .SetSlidingExpiration(TimeSpan.FromMinutes(5))
+                    .SetAbsoluteExpiration(TimeSpan.FromHours(1));
+
+                _memoryCache.Set(AllCommentsCacheKey, comments, cacheEntryOptions);
+
+                _logger.LogDebug("All comments loaded from repository and cached");
+            }
+            else
+            {
+                _logger.LogDebug("All comments loaded from cache");
+            }
 
             _logger.LogDebug("Admin retrieved {Count} comments", comments.Count());
             return _mapper.Map<IEnumerable<CommentDto>>(comments);
+        }
+
+        private string GetTaskCommentsCacheKey(string taskId)
+        {
+            return $"{TaskCommentsCachePrefix}{taskId}";
         }
     }
 }

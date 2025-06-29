@@ -10,5 +10,6 @@ namespace Application.ServicesInterfaces
         Task<TaskHistoryDto> GetByIdAsync(string id, CancellationToken cancellationToken = default);
         Task<IEnumerable<TaskHistoryDto>> GetAllAsync(CancellationToken cancellationToken = default);
         Task<IEnumerable<TaskHistoryDto>> GetByTaskIdAsync(string taskId, CancellationToken cancellationToken = default);
+        void InvalidateTaskHistoryCache(string taskId);
     }
 }

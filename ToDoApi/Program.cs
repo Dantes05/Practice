@@ -63,6 +63,7 @@ try
     // Регистрация фильтра валидации
     builder.Services.AddScoped<ValidationFilter>();
 
+    builder.Services.AddMemoryCache();
     // Репозитории
     builder.Services.AddScoped(typeof(IBaseRepository<>), typeof(BaseRepository<>));
     builder.Services.AddScoped<ITaskRepository, TaskRepository>();

@@ -4,6 +4,7 @@ using AutoMapper;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Interfaces;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -22,17 +23,24 @@ namespace Application.Services
         private readonly ITaskHistoryRepository _taskHistoryRepository;
         private readonly IMapper _mapper;
         private readonly ILogger<TaskService> _logger;
+        private readonly IMemoryCache _memoryCache;
+        private const string AllTasksCacheKey = "all_tasks_filtered";
+        private readonly ITaskHistoryService _taskHistoryService;
 
         public TaskService(
             ITaskRepository taskRepository,
             ITaskHistoryRepository taskHistoryRepository,
             IMapper mapper,
-            ILogger<TaskService> logger)
+            ILogger<TaskService> logger,
+            IMemoryCache memoryCache,
+            ITaskHistoryService taskHistoryService)
         {
             _taskRepository = taskRepository;
             _taskHistoryRepository = taskHistoryRepository;
             _mapper = mapper;
             _logger = logger;
+            _memoryCache = memoryCache;
+            _taskHistoryService = taskHistoryService;
         }
 
         public async Task<TaskDto> CreateTaskAsync(CreateTaskDto createTaskDto, string userId, CancellationToken cancellationToken = default)
@@ -60,6 +68,8 @@ namespace Application.Services
                     "Created",
                     $"Task created by user {userId}",
                     cancellationToken);
+
+                InvalidateTaskCaches();
 
                 _logger.LogInformation(
                     "Task created successfully. TaskId: {TaskId}, Title: {Title}",
@@ -114,6 +124,13 @@ namespace Application.Services
 
             try
             {
+                var cacheKey = $"{AllTasksCacheKey}_{filter.GetHashCode()}";
+                if (_memoryCache.TryGetValue(cacheKey, out IEnumerable<TaskDto> cachedResult))
+                {
+                    _logger.LogDebug("Returning cached tasks with filter");
+                    return cachedResult;
+                }
+
                 Expression<Func<Taska, bool>> predicate = t =>
                     (!filter.Status.HasValue || t.Status == filter.Status.Value) &&
                     (!filter.Priority.HasValue || t.Priority == filter.Priority.Value) &&
@@ -132,11 +149,18 @@ namespace Application.Services
                     filter.PageSize,
                     cancellationToken);
 
+                var result = _mapper.Map<IEnumerable<TaskDto>>(tasks);
+
+                _memoryCache.Set(cacheKey, result, new MemoryCacheEntryOptions
+                {
+                    AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5)
+                });
+
                 _logger.LogDebug(
                     "Retrieved {Count} tasks with filter",
-                    tasks.Count());
+                    result.Count());
 
-                return _mapper.Map<IEnumerable<TaskDto>>(tasks);
+                return result;
             }
             catch (Exception ex)
             {
@@ -193,6 +217,9 @@ namespace Application.Services
                     }
                 }
 
+                InvalidateTaskCaches();
+                _taskHistoryService.InvalidateTaskHistoryCache(id);
+
                 _logger.LogInformation(
                     "Task {TaskId} updated successfully by user {UserId}",
                     id, userId);
@@ -234,6 +261,9 @@ namespace Application.Services
                     cancellationToken);
 
                 await _taskRepository.DeleteAsync(task, cancellationToken);
+
+                InvalidateTaskCaches();
+                _taskHistoryService.InvalidateTaskHistoryCache(id);
 
                 _logger.LogInformation(
                     "Task {TaskId} deleted successfully by user {UserId}",
@@ -280,6 +310,9 @@ namespace Application.Services
                     task.Status.ToString(),
                     $"Status changed from {oldStatus} to {task.Status} by user {userId}",
                     cancellationToken);
+
+                InvalidateTaskCaches();
+                _taskHistoryService.InvalidateTaskHistoryCache(id);
 
                 _logger.LogInformation(
                     "Status changed successfully for task {TaskId} to {Status} by user {UserId}",
@@ -403,6 +436,14 @@ namespace Application.Services
             }
 
             return value.ToString();
+        }
+
+        private void InvalidateTaskCaches()
+        {
+            
+             _memoryCache.Remove(AllTasksCacheKey);
+                
+             _logger.LogDebug("Invalidated all task caches");
         }
     }
 }
