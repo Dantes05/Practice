@@ -1,5 +1,6 @@
 ﻿using Application.DTOs;
 using Application.Extensions;
+using Application.Interfaces;
 using AutoMapper;
 using Domain.Entities;
 using Microsoft.AspNetCore.Identity;
@@ -24,17 +25,20 @@ namespace Application.Services
         private readonly IConfiguration _config;
         private readonly IMapper _mapper;
         private readonly ILogger<AuthService> _logger;
+        private readonly IEmailService _emailService;
 
         public AuthService(
             IMapper mapper,
             UserManager<User> userManager,
             IConfiguration config,
-            ILogger<AuthService> logger)
+            ILogger<AuthService> logger,
+            IEmailService emailService)
         {
             _userManager = userManager;
             _config = config;
             _mapper = mapper;
             _logger = logger;
+            _emailService = emailService;
         }
 
         public async Task RegisterAsync(
@@ -172,6 +176,55 @@ namespace Application.Services
                 rng.GetBytes(randomNumber);
                 return Convert.ToBase64String(randomNumber);
             }
+        }
+
+        public async Task ForgotPasswordAsync(ForgotPasswordDto forgotPasswordDto)
+        {
+            _logger.LogInformation("Forgot password request for email: {Email}", forgotPasswordDto.Email);
+
+            var user = await _userManager.FindByEmailAsync(forgotPasswordDto.Email);
+            if (user == null)
+            {
+                _logger.LogWarning("User with email {Email} not found for password reset", forgotPasswordDto.Email);
+                return;
+            }
+
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            await _emailService.SendPasswordResetEmailAsync(user.Email, token);
+
+            _logger.LogInformation("Password reset token generated and email sent for user: {Email}", user.Email);
+        }
+
+        public async Task ResetPasswordAsync(ResetPasswordDto resetPasswordDto)
+        {
+            _logger.LogInformation("Password reset attempt for email: {Email}", resetPasswordDto.Email);
+
+            var user = await _userManager.FindByEmailAsync(resetPasswordDto.Email);
+            if (user == null)
+            {
+                _logger.LogError("Password reset failed - user not found: {Email}", resetPasswordDto.Email);
+                throw new ValidationException("Invalid request");
+            }
+
+            if (resetPasswordDto.NewPassword != resetPasswordDto.ConfirmPassword)
+            {
+                _logger.LogError("Password reset failed - passwords don't match for user: {Email}", resetPasswordDto.Email);
+                throw new ValidationException("Passwords don't match");
+            }
+
+            var result = await _userManager.ResetPasswordAsync(
+                user,
+                resetPasswordDto.Token,
+                resetPasswordDto.NewPassword);
+
+            if (!result.Succeeded)
+            {
+                var errors = result.Errors.Select(e => e.Description);
+                _logger.LogError("Password reset failed for user {Email}: {Errors}", resetPasswordDto.Email, string.Join(", ", errors));
+                throw new ValidationException($"Password reset failed: {string.Join(", ", errors)}");
+            }
+
+            _logger.LogInformation("Password reset successfully for user: {Email}", resetPasswordDto.Email);
         }
     }
 }

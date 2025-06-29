@@ -54,5 +54,23 @@ namespace ToDoApi.Controllers
             await _authService.LogoutAsync(User, cancellationToken);
             return Ok();
         }
+
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword(
+            [FromBody] ForgotPasswordDto forgotPasswordDto,
+            CancellationToken cancellationToken = default)
+        {
+            await _authService.ForgotPasswordAsync(forgotPasswordDto);
+            return Ok();
+        }
+
+        [HttpPost("reset-password")]
+        public async Task<IActionResult> ResetPassword(
+            [FromBody] ResetPasswordDto resetPasswordDto,
+            CancellationToken cancellationToken = default)
+        {
+            await _authService.ResetPasswordAsync(resetPasswordDto);
+            return Ok();
+        }
     }
 }

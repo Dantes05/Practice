@@ -20,6 +20,7 @@ using Infrastructure.Filters;
 using Microsoft.AspNetCore.Mvc;
 using FluentValidation.AspNetCore;
 using LibraryApp;
+using Application.Interfaces;
 
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Debug()
@@ -76,6 +77,7 @@ try
     builder.Services.AddScoped<ITaskHistoryService, TaskHistoryService>();
     builder.Services.AddScoped<AuthService>();
     builder.Services.AddSingleton<JwtHandler>();
+    builder.Services.AddScoped<IEmailService, EmailService>();
 
     // Настройка Swagger
     builder.Services.AddSwaggerGen(c =>
@@ -141,6 +143,8 @@ try
             fv.RegisterValidatorsFromAssemblyContaining<UserForRegistrationDtoValidator>();
             fv.RegisterValidatorsFromAssemblyContaining<CreateCommentDtoValidator>();
             fv.RegisterValidatorsFromAssemblyContaining<UpdateCommentDtoValidator>();
+            fv.RegisterValidatorsFromAssemblyContaining<ForgotPasswordDtoValidator>();
+            fv.RegisterValidatorsFromAssemblyContaining<ResetPasswordDtoValidator>();
             fv.AutomaticValidationEnabled = true;
             fv.ImplicitlyValidateChildProperties = true;
         });
