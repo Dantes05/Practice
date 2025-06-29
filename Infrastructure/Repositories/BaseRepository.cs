@@ -16,12 +16,16 @@ namespace Infrastructure.Repositories
 
         public async Task<T> GetByIdAsync(string id, CancellationToken cancellationToken = default)
         {
-            return await _context.Set<T>().FindAsync(new object[] { id }, cancellationToken);
+            return await _context.Set<T>()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(e => EF.Property<string>(e, "Id") == id, cancellationToken);
         }
 
         public async Task<IEnumerable<T>> GetAllAsync(CancellationToken cancellationToken = default)
         {
-            return await _context.Set<T>().ToListAsync(cancellationToken);
+            return await _context.Set<T>()
+                .AsNoTracking()
+                .ToListAsync(cancellationToken);
         }
 
         public async Task AddAsync(T entity, CancellationToken cancellationToken = default)

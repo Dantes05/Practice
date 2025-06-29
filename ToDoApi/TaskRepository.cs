@@ -14,17 +14,12 @@ namespace Infrastructure.Repositories
 
         public async Task<bool> ExistsAsync(string id, CancellationToken cancellationToken = default)
         {
-            return await _context.Set<Taska>()
-                .AsNoTracking()
-                .AnyAsync(t => t.Id == id, cancellationToken);
+            return await _context.Set<Taska>().AnyAsync(t => t.Id == id, cancellationToken);
         }
 
         public async Task<IEnumerable<Taska>> FindAsync(Expression<Func<Taska, bool>> predicate, CancellationToken cancellationToken = default)
         {
-            return await _context.Set<Taska>()
-                .AsNoTracking()
-                .Where(predicate)
-                .ToListAsync(cancellationToken);
+            return await _context.Set<Taska>().Where(predicate).ToListAsync(cancellationToken);
         }
 
         public async Task<IEnumerable<Taska>> GetFilteredAndSortedAsync(
@@ -35,9 +30,7 @@ namespace Infrastructure.Repositories
             int pageSize,
             CancellationToken cancellationToken = default)
         {
-            var query = _context.Set<Taska>()
-                .AsNoTracking()
-                .Where(filter);
+            var query = _context.Set<Taska>().AsQueryable().Where(filter);
 
             query = sortBy?.ToLower() switch
             {

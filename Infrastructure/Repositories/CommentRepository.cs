@@ -14,6 +14,7 @@ namespace Infrastructure.Repositories
         public async Task<IEnumerable<Comment>> GetCommentsForTaskAsync(string taskId, CancellationToken cancellationToken = default)
         {
             return await _context.Set<Comment>()
+                .AsNoTracking()
                 .Where(c => c.TaskaId == taskId)
                 .OrderByDescending(c => c.CreatedAt)
                 .ToListAsync(cancellationToken);
@@ -22,6 +23,7 @@ namespace Infrastructure.Repositories
         public async Task<IEnumerable<Comment>> GetAllCommentsAsync(CancellationToken cancellationToken = default)
         {
             return await _context.Set<Comment>()
+                .AsNoTracking()
                 .OrderByDescending(c => c.CreatedAt)
                 .ToListAsync(cancellationToken);
         }

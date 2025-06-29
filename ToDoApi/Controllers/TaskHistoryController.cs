@@ -1,5 +1,6 @@
 ﻿using Application.DTOs;
 using Application.ServicesInterfaces;
+using Infrastructure.Filters;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Threading;
@@ -10,6 +11,7 @@ namespace ToDoApi.Controllers
     [Authorize]
     [ApiController]
     [Route("api/tasks/history")]
+    [ServiceFilter(typeof(ValidationFilter))]
     public class TaskHistoryController : ControllerBase
     {
         private readonly ITaskHistoryService _taskHistoryService;

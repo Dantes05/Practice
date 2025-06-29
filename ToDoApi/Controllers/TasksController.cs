@@ -5,12 +5,14 @@ using Microsoft.AspNetCore.Authorization;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Security.Claims;
+using Infrastructure.Filters;
 
 namespace WebAPI.Controllers
 {
     [Authorize]
     [ApiController]
     [Route("api/[controller]")]
+    [ServiceFilter(typeof(ValidationFilter))]
     public class TasksController : ControllerBase
     {
         private readonly ITaskService _taskService;

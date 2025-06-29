@@ -10,7 +10,6 @@ namespace Application.DTOs
 {
     public class ChangeTaskStatusDto
     {
-        [Required(ErrorMessage = "Status is required")]
         public TaskaStatus Status { get; set; }
     }
 }

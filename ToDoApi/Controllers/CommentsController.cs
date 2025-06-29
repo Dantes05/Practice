@@ -1,5 +1,6 @@
 ﻿using Application.DTOs;
 using Application.ServicesInterfaces;
+using Infrastructure.Filters;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -11,6 +12,7 @@ namespace ToDoApi.Controllers
     [Authorize]
     [ApiController]
     [Route("api/tasks/[controller]")]
+    [ServiceFilter(typeof(ValidationFilter))]
     public class CommentsController : ControllerBase
     {
         private readonly ICommentService _commentService;

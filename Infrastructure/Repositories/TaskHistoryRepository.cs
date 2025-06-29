@@ -14,6 +14,7 @@ namespace Infrastructure.Repositories
         public async Task<IEnumerable<TaskHistory>> GetByTaskIdAsync(string taskId, CancellationToken cancellationToken = default)
         {
             return await _context.TaskHistories
+                .AsNoTracking()
                 .Where(th => th.TaskaId == taskId)
                 .OrderByDescending(th => th.ChangedAt)
                 .ToListAsync(cancellationToken);

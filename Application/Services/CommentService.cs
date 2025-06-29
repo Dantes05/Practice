@@ -109,7 +109,7 @@ namespace Application.Services
                 throw new UnauthorizedAccessException("You can only update your own comments");
             }
 
-            comment.Text = updateCommentDto.Text;
+            _mapper.Map(updateCommentDto, comment);
             await _commentRepository.UpdateAsync(comment, cancellationToken);
 
             _logger.LogInformation(

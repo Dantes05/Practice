@@ -43,12 +43,6 @@ namespace Application.Services
         {
             _logger.LogInformation("Register request for user: {Email}", userForRegistration.Email);
 
-            if (userForRegistration == null)
-            {
-                _logger.LogError("User data is required");
-                throw new ValidationException("User data is required");
-            }
-
             var user = _mapper.Map<User>(userForRegistration);
             var result = await _userManager.CreateAsync(user, userForRegistration.Password);
 

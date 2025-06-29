@@ -14,6 +14,11 @@ using Domain.Interfaces;
 using Infrastructure.Repositories;
 using Application.ServicesInterfaces;
 using LibraryApp.JwtFeatures;
+using Application.Validators;
+using FluentValidation;
+using Infrastructure.Filters;
+using Microsoft.AspNetCore.Mvc;
+using FluentValidation.AspNetCore;
 using LibraryApp;
 
 Log.Logger = new LoggerConfiguration()
@@ -34,26 +39,44 @@ try
 
     builder.Host.UseSerilog();
 
+    // Добавление сервисов
     builder.Services.AddAutoMapper(typeof(Program));
 
+    // Настройка БД
     builder.Services.AddDbContext<ApplicationDbContext>(options =>
         options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+    // Настройка Identity
     builder.Services.AddIdentity<User, IdentityRole>()
         .AddEntityFrameworkStores<ApplicationDbContext>()
         .AddDefaultTokenProviders();
 
+    // Настройка валидации
+    builder.Services.AddValidatorsFromAssemblyContaining<Program>(ServiceLifetime.Scoped);
+
+    // Отключаем встроенную валидацию ModelState
+    builder.Services.Configure<ApiBehaviorOptions>(options =>
+    {
+        options.SuppressModelStateInvalidFilter = true;
+    });
+
+    // Регистрация фильтра валидации
+    builder.Services.AddScoped<ValidationFilter>();
+
+    // Репозитории
     builder.Services.AddScoped(typeof(IBaseRepository<>), typeof(BaseRepository<>));
     builder.Services.AddScoped<ITaskRepository, TaskRepository>();
     builder.Services.AddScoped<ICommentRepository, CommentRepository>();
     builder.Services.AddScoped<ITaskHistoryRepository, TaskHistoryRepository>();
 
+    // Сервисы
     builder.Services.AddScoped<ITaskService, TaskService>();
     builder.Services.AddScoped<ICommentService, CommentService>();
     builder.Services.AddScoped<ITaskHistoryService, TaskHistoryService>();
     builder.Services.AddScoped<AuthService>();
     builder.Services.AddSingleton<JwtHandler>();
 
+    // Настройка Swagger
     builder.Services.AddSwaggerGen(c =>
     {
         c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -79,6 +102,7 @@ try
         });
     });
 
+    // Настройка JWT аутентификации
     var jwtSettings = builder.Configuration.GetSection("JWTSettings");
     builder.Services.AddAuthentication(opt =>
     {
@@ -99,17 +123,31 @@ try
         };
     });
 
+    // Настройка авторизации
     builder.Services.AddAuthorization(options =>
     {
         options.AddPolicy("OnlyAdminUsers", policy => policy.RequireRole("Admin"));
         options.AddPolicy("AuthenticatedUsers", policy => policy.RequireAuthenticatedUser());
     });
 
-    builder.Services.AddControllers();
-
+    builder.Services.AddControllers()
+        .AddFluentValidation(fv =>
+        {
+            fv.RegisterValidatorsFromAssemblyContaining<ChangeTaskStatusDtoValidator>();
+            fv.RegisterValidatorsFromAssemblyContaining<CreateTaskDtoValidator>();
+            fv.RegisterValidatorsFromAssemblyContaining<UpdateTaskDtoValidator>();
+            fv.RegisterValidatorsFromAssemblyContaining<UserForAuthenticationDtoValidator>();
+            fv.RegisterValidatorsFromAssemblyContaining<UserForRegistrationDtoValidator>();
+            fv.RegisterValidatorsFromAssemblyContaining<CreateCommentDtoValidator>();
+            fv.RegisterValidatorsFromAssemblyContaining<UpdateCommentDtoValidator>();
+            fv.AutomaticValidationEnabled = true;
+            fv.ImplicitlyValidateChildProperties = true;
+        });
+    builder.Services.Configure<ApiBehaviorOptions>(options =>
+    {
+        options.SuppressModelStateInvalidFilter = true;
+    });
     var app = builder.Build();
-
-
 
     if (app.Environment.IsDevelopment())
     {

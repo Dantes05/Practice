@@ -4,11 +4,13 @@ using Application.Services;
 using Microsoft.AspNetCore.Authorization;
 using System.Threading;
 using System.Threading.Tasks;
+using Infrastructure.Filters;
 
 namespace ToDoApi.Controllers
 {
     [Route("api/auth")]
     [ApiController]
+    [ServiceFilter(typeof(ValidationFilter))]
     public class AuthController : ControllerBase
     {
         private readonly AuthService _authService;
