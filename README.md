@@ -13,6 +13,7 @@
   "refreshToken": "JhAIq7EBH33S416QAkehxn+T4AvwCR1dJK6xKWfsoZg="
 }
 Из этого ответа скопировать token, вверху swagger нажать кнопку Authorize, в открывшемся окне в поле value необходимо вписать Bearer "token"
+
 **Функция восстановления пароля:**
 Для восстановления пароля необходимо сначала выполнить запрос /api/auth/forgot-password, введя там email. После этого на email придёт письмо такого вида:
 Password Reset Request
