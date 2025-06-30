@@ -3,6 +3,7 @@
 1. Remove-Migration
 2. Add-Migration "Название миграции"
 3. Update-Database
+
 логин администратора: admin@gmail.com
 пароль: Admin123!
 Для того, чтобы **авторизоваться** в Swagger нужно выполнить запрос /api/auth/authenticate, введя логин и пароль, при успешно выполнении запроса получите ответ:
