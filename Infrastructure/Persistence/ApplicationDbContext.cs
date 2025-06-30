@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
+
 namespace Infrastructure.Persistence
 {
     public class ApplicationDbContext : IdentityDbContext<User, IdentityRole, string>
